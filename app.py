@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, render_template_string
+from flask import Flask, jsonify, render_template_string, request
 
 app = Flask(__name__)
 
@@ -38,6 +38,7 @@ def home():
                 <a href="/">Home</a>
                 <a href="/domains">Domains</a>
                 <a href="/about">About</a>
+                <a href="/register">Register</a>
                 <a href="/api/domains">API</a>
             </div>
             <div class="hero">
@@ -91,6 +92,7 @@ def domains():
                 <a href="/">Home</a>
                 <a href="/domains">Domains</a>
                 <a href="/about">About</a>
+                <a href="/register">Register</a>
                 <a href="/api/domains">API</a>
             </div>
             <h1>Available Domains</h1>
@@ -136,6 +138,7 @@ def about():
                 <a href="/">Home</a>
                 <a href="/domains">Domains</a>
                 <a href="/about">About</a>
+                <a href="/register">Register</a>
                 <a href="/api/domains">API</a>
             </div>
             <h1>About FreeDomain</h1>
@@ -166,6 +169,87 @@ def api_domains():
         "data": DOMAINS,
         "total": len(DOMAINS)
     })
+
+
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    """Domain registration page"""
+    html = """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Register Domain - FreeDomain</title>
+        <style>
+            body { font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5; }
+            .container { max-width: 500px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; }
+            .nav { margin-bottom: 20px; }
+            .nav a { margin-right: 20px; color: #3498db; text-decoration: none; }
+            input { width: 100%; padding: 10px; margin: 10px 0; box-sizing: border-box; }
+            button { width: 100%; padding: 12px; background: #27ae60; color: white; border: none; border-radius: 5px; cursor: pointer; }
+            button:hover { background: #219150; }
+            .message { padding: 15px; margin: 10px 0; border-radius: 5px; }
+            .success { background: #d4edda; color: #155724; }
+            .error { background: #f8d7da; color: #721c24; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="nav">
+                <a href="/">Home</a>
+                <a href="/domains">Domains</a>
+                <a href="/about">About</a>
+                <a href="/register">Register</a>
+            </div>
+            <h1>Register Your Free Domain</h1>
+            {% if message %}
+            <div class="message {{ message_type }}">{{ message }}</div>
+            {% endif %}
+            <form method="POST">
+                <label>Choose a domain name:</label>
+                <input type="text" name="domain" placeholder="Enter desired domain (e.g., mysite)" required>
+                <button type="submit">Register Domain</button>
+            </form>
+            <p><small>Your domain will be: [name].free</small></p>
+        </div>
+    </body>
+    </html>
+    """
+    if request.method == "POST":
+        domain_name = request.form.get("domain", "").strip().lower()
+        if not domain_name:
+            return render_template_string(html, message="Please enter a domain name", message_type="error")
+        full_domain = f"{domain_name}.free"
+        for domain in DOMAINS:
+            if domain["name"] == full_domain:
+                if domain["status"] == "taken":
+                    return render_template_string(html, message=f"Sorry, {full_domain} is already taken", message_type="error")
+                else:
+                    domain["status"] = "taken"
+                    domain["price"] = "Registered"
+                    return render_template_string(html, message=f"Success! {full_domain} is now registered to you!", message_type="success")
+        DOMAINS.append({"name": full_domain, "status": "taken", "price": "Registered"})
+        return render_template_string(html, message=f"Success! {full_domain} is now registered to you!", message_type="success")
+    return render_template_string(html)
+
+
+@app.route("/api/domains/register", methods=["POST"])
+def api_register_domain():
+    """API endpoint to register a domain"""
+    data = request.get_json()
+    if not data or "domain" not in data:
+        return jsonify({"success": False, "error": "Domain name required"}), 400
+    domain_name = data["domain"].strip().lower()
+    full_domain = f"{domain_name}.free"
+    for domain in DOMAINS:
+        if domain["name"] == full_domain:
+            if domain["status"] == "taken":
+                return jsonify({"success": False, "error": f"{full_domain} is already taken"}), 400
+            domain["status"] = "taken"
+            domain["price"] = "Registered"
+            return jsonify({"success": True, "message": f"{full_domain} registered successfully", "domain": domain})
+    new_domain = {"name": full_domain, "status": "taken", "price": "Registered"}
+    DOMAINS.append(new_domain)
+    return jsonify({"success": True, "message": f"{full_domain} registered successfully", "domain": new_domain})
 
 
 if __name__ == "__main__":

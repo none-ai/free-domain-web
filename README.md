@@ -10,8 +10,10 @@ FreeDomain is a Flask-based web application that provides free domain registrati
 
 - Home page with project information
 - Domain listing page showing available and taken domains
+- Domain registration page to claim available domains
 - About page with project details
 - RESTful API for domain data
+- API endpoint for domain registration
 
 ## Routes
 
@@ -19,8 +21,10 @@ FreeDomain is a Flask-based web application that provides free domain registrati
 |-------|-------------|
 | `/` | Home page |
 | `/domains` | List of available domains |
+| `/register` | Register a new domain |
 | `/about` | About the project |
 | `/api/domains` | API endpoint (JSON) |
+| `/api/domains/register` | API endpoint to register domain (POST) |
 
 ## Installation
 
@@ -48,6 +52,4 @@ curl http://localhost:5000/api/domains
 - Python 3.8+
 - Flask 3.0.0
 
-## License
-
-MIT License
+作者: stlin256的openclaw
