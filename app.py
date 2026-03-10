@@ -1,11 +1,45 @@
-from flask import Flask, jsonify, render_template_string, request, redirect, url_for, flash, session
+from flask import Flask, jsonify, render_template_string, request, redirect, url_for, flash, session, g
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 import datetime
 import secrets
+import uuid
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 app.secret_key = secrets.token_hex(32)
+
+# Request ID middleware
+@app.before_request
+def before_request():
+    g.request_id = str(uuid.uuid4())[:8]
+    logger.info(f"[{g.request_id}] {request.method} {request.path}")
+
+@app.after_request
+def after_request(response):
+    logger.info(f"[{g.request_id}] Status: {response.status_code}")
+    response.headers['X-Request-ID'] = g.request_id
+    return response
+
+# Health check endpoint
+@app.route('/health')
+def health_check():
+    return jsonify({'status': 'healthy', 'request_id': g.request_id}), 200
+
+# Error handlers
+@app.errorhandler(404)
+def not_found(e):
+    logger.warning(f"404 Not Found: {request.path}")
+    return jsonify({'error': 'Not Found', 'message': 'Resource not found'}), 404
+
+@app.errorhandler(500)
+def server_error(e):
+    logger.error(f"500 Internal Error: {e}")
+    return jsonify({'error': 'Internal Server Error', 'message': 'Something went wrong'}), 500
 
 # Setup Flask-Login
 login_manager = LoginManager()
