@@ -37,6 +37,7 @@ FreeDomain is a Flask-based web application that provides free domain registrati
 | `/api/domains/register` | API endpoint to register domain (POST) |
 | `/api/users/register` | API endpoint to register user (POST) |
 | `/api/stats` | API endpoint for statistics (JSON) |
+| `/api/domains/batch` | Batch domain operations (POST) |
 
 ## Installation
 

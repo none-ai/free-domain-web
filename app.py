@@ -731,6 +731,40 @@ def api_stats():
     })
 
 
+@app.route('/api/domains/batch', methods=['POST'])
+def api_domains_batch():
+    """Batch domain operations"""
+    data = request.get_json() or {}
+    operations = data.get('operations', [])
+    
+    results = []
+    for op in operations:
+        op_type = op.get('type')
+        domain_name = op.get('domain')
+        
+        if op_type == 'check':
+            domain = next((d for d in DOMAINS if d['name'] == domain_name), None)
+            results.append({
+                'domain': domain_name,
+                'status': domain['status'] if domain else 'not_found'
+            })
+        elif op_type == 'register':
+            domain = next((d for d in DOMAINS if d['name'] == domain_name), None)
+            if domain and domain['status'] == 'available':
+                domain['status'] = 'taken'
+                domain['owner_id'] = op.get('owner_id', 1)
+                domain['created_at'] = datetime.datetime.now().isoformat()
+                results.append({'domain': domain_name, 'status': 'registered'})
+            else:
+                results.append({'domain': domain_name, 'status': 'failed', 'reason': 'not available'})
+    
+    return jsonify({
+        'success': True,
+        'results': results,
+        'total': len(results)
+    })
+
+
 # Create admin user
 admin_user = User(1, "admin", "admin@freedomain.example", generate_password_hash("admin123"), is_admin=True)
 USERS[1] = admin_user
